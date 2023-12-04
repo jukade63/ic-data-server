@@ -2,7 +2,6 @@ const express = require("express");
 const mysql = require("mysql2");
 const multer = require('multer')
 const crypto = require('crypto')
-const sharp = require('sharp')
 const cors = require("cors");
 const { uploadFile, deleteFile, getObjectSignedUrl } = require("./s3.js");
 
@@ -41,20 +40,17 @@ db.connect((err) => {
 
 // create new user
 app.post("/addUser", upload.single("image"), async (req, res) => {
-  console.log(req.body.id);
   const file = req.file;
   const id= req.body.id;
   const firstname = req.body.firstname
   const lastname = req.body.lastname
   const DOB = req.body.DOB
   const address = req.body.address
-  const imageName = generateFileName();
+  let imageName = null
 
   if(file){
-    const fileBuffer = await sharp(file.buffer)
-    .resize({ height: 1920, width: 1080, fit: "contain" })
-    .toBuffer();
-    await uploadFile(fileBuffer, imageName, file.mimetype);
+    imageName = generateFileName();
+    await uploadFile(file.buffer, imageName, file.mimetype);
   }
  
   if (!id || !firstname || !lastname || !DOB || !address) {
@@ -78,13 +74,27 @@ app.post("/addUser", upload.single("image"), async (req, res) => {
 });
 
 // update user data
-app.put("/update-user/:userId", (req, res) => {
-  const updatedUserData = req.body;
-  const userId = updatedUserData.id;
+app.put("/update-user/:userId", upload.single("image"), async (req, res) => {
+  const file = req.file;
+  const userId = req.params.userId;
+  const firstname = req.body.firstname
+  const lastname = req.body.lastname
+  const DOB = req.body.DOB
+  const address = req.body.address
+  let imageName = null
 
+  if (!userId || !firstname || !lastname || !DOB || !address) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  if(file){
+    imageName = generateFileName();
+    await uploadFile(file.buffer, imageName, file.mimetype);
+  }
+ 
   db.query(
-    "UPDATE users SET ? WHERE id = ?",
-    [updatedUserData, userId],
+    `UPDATE users SET firstname = ?, lastname = ?, DOB = ?, address = ?, imageName = ? WHERE id = ?`,
+    [firstname, lastname, DOB, address, imageName,  userId],
     (error, results) => {
       if (error) {
         console.error("Error updating user:", error);
