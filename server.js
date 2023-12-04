@@ -1,7 +1,7 @@
 const express = require("express");
 const mysql = require("mysql2");
-const multer = require('multer')
-const crypto = require('crypto')
+const multer = require("multer");
+const crypto = require("crypto");
 const cors = require("cors");
 const { uploadFile, deleteFile, getObjectSignedUrl } = require("./s3.js");
 
@@ -41,18 +41,18 @@ db.connect((err) => {
 // create new user
 app.post("/addUser", upload.single("image"), async (req, res) => {
   const file = req.file;
-  const id= req.body.id;
-  const firstname = req.body.firstname
-  const lastname = req.body.lastname
-  const DOB = req.body.DOB
-  const address = req.body.address
-  let imageName = null
+  const id = req.body.id;
+  const firstname = req.body.firstname;
+  const lastname = req.body.lastname;
+  const DOB = req.body.DOB;
+  const address = req.body.address;
+  let imageName = null;
 
-  if(file){
+  if (file) {
     imageName = generateFileName();
     await uploadFile(file.buffer, imageName, file.mimetype);
   }
- 
+
   if (!id || !firstname || !lastname || !DOB || !address) {
     return res.status(400).json({ message: "All fields are required" });
   }
@@ -77,24 +77,24 @@ app.post("/addUser", upload.single("image"), async (req, res) => {
 app.put("/update-user/:userId", upload.single("image"), async (req, res) => {
   const file = req.file;
   const userId = req.params.userId;
-  const firstname = req.body.firstname
-  const lastname = req.body.lastname
-  const DOB = req.body.DOB
-  const address = req.body.address
-  let imageName = null
+  const firstname = req.body.firstname;
+  const lastname = req.body.lastname;
+  const DOB = req.body.DOB;
+  const address = req.body.address;
+  let imageName = null;
 
   if (!userId || !firstname || !lastname || !DOB || !address) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  if(file){
+  if (file) {
     imageName = generateFileName();
     await uploadFile(file.buffer, imageName, file.mimetype);
   }
- 
+
   db.query(
     `UPDATE users SET firstname = ?, lastname = ?, DOB = ?, address = ?, imageName = ? WHERE id = ?`,
-    [firstname, lastname, DOB, address, imageName,  userId],
+    [firstname, lastname, DOB, address, imageName, userId],
     (error, results) => {
       if (error) {
         console.error("Error updating user:", error);
@@ -112,18 +112,24 @@ app.put("/update-user/:userId", upload.single("image"), async (req, res) => {
 app.get("/get-user/:userId", (req, res) => {
   const userId = req.params.userId;
 
-  db.query("SELECT * FROM users WHERE id = ?", [userId], async (error, results) => {
-    if (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Error fetching user" });
-    } else if (results.length === 0) {
-      res.status(404).json({ message: "User not found" });
-    } else {
-      const user = results[0]
-      user.imageUrl = await getObjectSignedUrl(user.imageName)
-      res.status(200).json({ user });
+  db.query(
+    "SELECT * FROM users WHERE id = ?",
+    [userId],
+    async (error, results) => {
+      if (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).json({ message: "Error fetching user" });
+      } else if (results.length === 0) {
+        res.status(404).json({ message: "User not found" });
+      } else {
+        const user = results[0];
+        if (user.imageName) {
+          user.imageUrl = await getObjectSignedUrl(user.imageName);
+        }
+        res.status(200).json({ user });
+      }
     }
-  });
+  );
 });
 
 // Set the server to listen on a specific port
