@@ -23,10 +23,10 @@ const generateFileName = (bytes = 32) =>
 
 // MySQL connection configuration
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "root",
-  database: "cu_test",
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
 });
 
 // Connect to MySQL
@@ -39,7 +39,7 @@ db.connect((err) => {
 });
 
 // create new user
-app.post("/addUser", upload.single("image"), async (req, res) => {
+app.post("/api/add-user", upload.single("image"), async (req, res) => {
   const file = req.file;
   const id = req.body.id;
   const firstname = req.body.firstname;
@@ -74,7 +74,7 @@ app.post("/addUser", upload.single("image"), async (req, res) => {
 });
 
 // update user data
-app.put("/update-user/:userId", upload.single("image"), async (req, res) => {
+app.put("/api/update-user/:userId", upload.single("image"), async (req, res) => {
   const file = req.file;
   const userId = req.params.userId;
   const firstname = req.body.firstname;
@@ -109,7 +109,7 @@ app.put("/update-user/:userId", upload.single("image"), async (req, res) => {
 });
 
 // Get user by ID
-app.get("/get-user/:userId", (req, res) => {
+app.get("/api/get-user/:userId", (req, res) => {
   const userId = req.params.userId;
 
   db.query(
@@ -133,7 +133,7 @@ app.get("/get-user/:userId", (req, res) => {
 });
 
 // Set the server to listen on a specific port
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
