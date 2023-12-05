@@ -39,13 +39,13 @@ db.connect((err) => {
 
 //production route
 app.use(express.static(path.join(__dirname, "../frontend/ic-data/build")))
-app.get("/*", (req,res) => {
-  res.sendFile(path.join(__dirname, '../frontend/ic-data/build/index.html'), (err) => {
-    if(err){
-      res.status(500).send(err)
-    }
-  })
-})
+// app.use("/*", (req,res) => {
+//   res.sendFile(path.join(__dirname, '../frontend/ic-data/build/index.html'), (err) => {
+//     if(err){
+//       res.status(500).send(err)
+//     }
+//   })
+// })
 
 // create new user
 app.post("/api/add-user", upload.single("image"), async (req, res) => {
