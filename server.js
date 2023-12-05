@@ -4,6 +4,7 @@ const multer = require("multer");
 const crypto = require("crypto");
 const cors = require("cors");
 const { uploadFile, deleteFile, getObjectSignedUrl } = require("./s3.js");
+const path = require('path')
 
 const dotenv = require("dotenv");
 
@@ -11,7 +12,6 @@ dotenv.config();
 
 const app = express();
 
-// Enable CORS for all routes
 app.use(cors());
 app.use(express.json());
 
@@ -23,13 +23,12 @@ const generateFileName = (bytes = 32) =>
 
 // MySQL connection configuration
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "root",
-  database: "cu_test",
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
 });
 
-// Connect to MySQL
 db.connect((err) => {
   if (err) {
     console.error("Error connecting to MySQL: " + err.stack);
@@ -37,6 +36,17 @@ db.connect((err) => {
   }
   console.log("Connected to MySQL");
 });
+
+//production route
+app.use(express.static(path.join(__dirname, "../frontend/ic-data/build")))
+app.get("/*", (req,res) => {
+  // console.log(path.join(__dirname, '../frontend/ic-data/build/indext.html'));
+  res.sendFile(path.join(__dirname, '../frontend/ic-data/build/index.html'), (err) => {
+    if(err){
+      res.status(500).send(err)
+    }
+  })
+})
 
 // create new user
 app.post("/addUser", upload.single("image"), async (req, res) => {
