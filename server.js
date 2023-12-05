@@ -40,7 +40,6 @@ db.connect((err) => {
 //production route
 app.use(express.static(path.join(__dirname, "../frontend/ic-data/build")))
 app.get("/*", (req,res) => {
-  // console.log(path.join(__dirname, '../frontend/ic-data/build/indext.html'));
   res.sendFile(path.join(__dirname, '../frontend/ic-data/build/index.html'), (err) => {
     if(err){
       res.status(500).send(err)
@@ -49,7 +48,7 @@ app.get("/*", (req,res) => {
 })
 
 // create new user
-app.post("/addUser", upload.single("image"), async (req, res) => {
+app.post("/api/add-user", upload.single("image"), async (req, res) => {
   const file = req.file;
   const id = req.body.id;
   const firstname = req.body.firstname;
@@ -84,7 +83,7 @@ app.post("/addUser", upload.single("image"), async (req, res) => {
 });
 
 // update user data
-app.put("/update-user/:userId", upload.single("image"), async (req, res) => {
+app.put("/api/update-user/:userId", upload.single("image"), async (req, res) => {
   const file = req.file;
   const userId = req.params.userId;
   const firstname = req.body.firstname;
@@ -119,7 +118,7 @@ app.put("/update-user/:userId", upload.single("image"), async (req, res) => {
 });
 
 // Get user by ID
-app.get("/get-user/:userId", (req, res) => {
+app.get("/api/get-user/:userId", (req, res) => {
   const userId = req.params.userId;
 
   db.query(
@@ -143,7 +142,7 @@ app.get("/get-user/:userId", (req, res) => {
 });
 
 // Set the server to listen on a specific port
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
