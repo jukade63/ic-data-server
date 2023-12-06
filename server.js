@@ -139,8 +139,10 @@ app.delete("/api/delete-user/:userId", (req, res) => {
   const userId = req.params.userId;
   const imageUrl = req.query.imageUrl;
 
+  console.log(imageUrl);
+
   //fetch imageName from db if user has image profile before deleting all user data
-  if (imageUrl) {
+  if (imageUrl !== undefined) {
     const query = "SELECT imageName FROM users WHERE id = ?";
 
     db.query(query, [userId], async (error, results) => {
@@ -154,7 +156,9 @@ app.delete("/api/delete-user/:userId", (req, res) => {
         console.log("Image Name:", imageName);
 
         //delete user image stored in S3
-        await deleteFile(imageName);
+        if (imageName !== null) {
+          await deleteFile(imageName);
+        }
       } else {
         console.log("User with ID not found");
       }
@@ -173,7 +177,6 @@ app.delete("/api/delete-user/:userId", (req, res) => {
       .status(200)
       .json({ message: `User with ID ${userId} deleted successfully` });
   });
-
 });
 
 // Set the server to listen on a specific port
