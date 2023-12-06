@@ -4,7 +4,7 @@ const multer = require("multer");
 const crypto = require("crypto");
 const cors = require("cors");
 const { uploadFile, deleteFile, getObjectSignedUrl } = require("./s3.js");
-const path = require('path')
+const path = require("path");
 
 const dotenv = require("dotenv");
 
@@ -36,16 +36,6 @@ db.connect((err) => {
   }
   console.log("Connected to MySQL");
 });
-
-//production route
-app.use(express.static(path.join(__dirname, "../frontend/ic-data/build")))
-// app.use("/*", (req,res) => {
-//   res.sendFile(path.join(__dirname, '../frontend/ic-data/build/index.html'), (err) => {
-//     if(err){
-//       res.status(500).send(err)
-//     }
-//   })
-// })
 
 // create new user
 app.post("/api/add-user", upload.single("image"), async (req, res) => {
@@ -83,39 +73,43 @@ app.post("/api/add-user", upload.single("image"), async (req, res) => {
 });
 
 // update user data
-app.put("/api/update-user/:userId", upload.single("image"), async (req, res) => {
-  const file = req.file;
-  const userId = req.params.userId;
-  const firstname = req.body.firstname;
-  const lastname = req.body.lastname;
-  const DOB = req.body.DOB;
-  const address = req.body.address;
-  let imageName = null;
+app.put(
+  "/api/update-user/:userId",
+  upload.single("image"),
+  async (req, res) => {
+    const file = req.file;
+    const userId = req.params.userId;
+    const firstname = req.body.firstname;
+    const lastname = req.body.lastname;
+    const DOB = req.body.DOB;
+    const address = req.body.address;
+    let imageName = null;
 
-  if (!userId || !firstname || !lastname || !DOB || !address) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-
-  if (file) {
-    imageName = generateFileName();
-    await uploadFile(file.buffer, imageName, file.mimetype);
-  }
-
-  db.query(
-    `UPDATE users SET firstname = ?, lastname = ?, DOB = ?, address = ?, imageName = ? WHERE id = ?`,
-    [firstname, lastname, DOB, address, imageName, userId],
-    (error, results) => {
-      if (error) {
-        console.error("Error updating user:", error);
-        res.status(500).json({ message: "Error updating user" });
-      } else if (results.affectedRows === 0) {
-        res.status(404).json({ message: "User not found" });
-      } else {
-        res.status(200).json({ message: "User data updated successfully" });
-      }
+    if (!userId || !firstname || !lastname || !DOB || !address) {
+      return res.status(400).json({ message: "All fields are required" });
     }
-  );
-});
+
+    if (file) {
+      imageName = generateFileName();
+      await uploadFile(file.buffer, imageName, file.mimetype);
+    }
+
+    db.query(
+      `UPDATE users SET firstname = ?, lastname = ?, DOB = ?, address = ?, imageName = ? WHERE id = ?`,
+      [firstname, lastname, DOB, address, imageName, userId],
+      (error, results) => {
+        if (error) {
+          console.error("Error updating user:", error);
+          res.status(500).json({ message: "Error updating user" });
+        } else if (results.affectedRows === 0) {
+          res.status(404).json({ message: "User not found" });
+        } else {
+          res.status(200).json({ message: "User data updated successfully" });
+        }
+      }
+    );
+  }
+);
 
 // Get user by ID
 app.get("/api/get-user/:userId", (req, res) => {
@@ -139,6 +133,47 @@ app.get("/api/get-user/:userId", (req, res) => {
       }
     }
   );
+});
+
+app.delete("/api/delete-user/:userId", (req, res) => {
+  const userId = req.params.userId;
+  const imageUrl = req.query.imageUrl;
+
+  //fetch imageName from db if user has image profile before deleting all user data
+  if (imageUrl) {
+    const query = "SELECT imageName FROM users WHERE id = ?";
+
+    db.query(query, [userId], async (error, results) => {
+      if (error) {
+        console.error("Error retrieving imageName:", error);
+        return;
+      }
+
+      if (results.length > 0) {
+        const imageName = results[0].imageName;
+        console.log("Image Name:", imageName);
+
+        //delete user image stored in S3
+        await deleteFile(imageName);
+      } else {
+        console.log("User with ID not found");
+      }
+    });
+  }
+
+  db.query("DELETE FROM users WHERE id = ?", [userId], (error) => {
+    if (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ error: "Error deleting user" });
+      return;
+    }
+
+    console.log(`Deleted user with ID ${userId}`);
+    res
+      .status(200)
+      .json({ message: `User with ID ${userId} deleted successfully` });
+  });
+
 });
 
 // Set the server to listen on a specific port
